@@ -30,6 +30,13 @@ static void busy_wait (int64_t loops);
 static void real_time_sleep (int64_t num, int32_t denom);
 static void real_time_delay (int64_t num, int32_t denom);
 
+//Keeps sleep list organized by earliest wakeup time
+bool wakeup_tick_less(const struct list_elem *a,const struct list_elem *b, void *aux UNUSED){
+  const struct thread *t1 = list_entry(a,struct thread,elem);
+  const struct thread *t2 = list_entry(b, struct thread, elem);
+  return t1->wakeup_tick < t2->wakeup_tick;
+}
+
 /** Sets up the timer to interrupt TIMER_FREQ times per second,
    and registers the corresponding interrupt. */
 void
