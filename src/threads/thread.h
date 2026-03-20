@@ -84,6 +84,7 @@ struct thread
   {
     /* Owned by thread.c. */
     tid_t tid;                          /**< Thread identifier. */
+    int64_t wakeup_tick;                 //Denotes the tick in which the thread will wake up
     enum thread_status status;          /**< Thread state. */
     char name[16];                      /**< Name (for debugging purposes). */
     uint8_t *stack;                     /**< Saved stack pointer. */
@@ -137,5 +138,9 @@ int thread_get_nice (void);
 void thread_set_nice (int);
 int thread_get_recent_cpu (void);
 int thread_get_load_avg (void);
+
+void thread_check_wakeup(void);
+
+int64_t wakeup_tick (void);
 
 #endif /**< threads/thread.h */
