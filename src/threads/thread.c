@@ -24,7 +24,7 @@
    that are ready to run but not actually running. */
 static struct list ready_list;
 
-static struct list sleep_list; //This list will hold all inactive threads
+// static struct list sleep_list; //This list will hold all inactive threads
 
 /** List of all processes.  Processes are added to this list
    when they are first scheduled and removed when they exit. */
@@ -94,7 +94,6 @@ thread_init (void)
   lock_init (&tid_lock);
   list_init (&ready_list);
   list_init (&all_list);
-  list_init (&sleep_list);
 
   /* Set up a thread structure for the running thread. */
   initial_thread = running_thread ();
@@ -138,29 +137,29 @@ thread_tick (void)
     kernel_ticks++;
 
   thread_check_wakeup();
-  
+
   /* Enforce preemption. */
   if (++thread_ticks >= TIME_SLICE)
     intr_yield_on_return ();
 }
 
-void thread_check_wakeup(void){
-  int64_t current = timer_ticks(); //current will track the number of ticks
-  struct list_elem *e = list_begin(&sleep_list); //List for sleeping threads has been initialized
+// void thread_check_wakeup(void){
+//   int64_t current = timer_ticks(); //current will track the number of ticks
+//   struct list_elem *e = list_begin(&sleep_list); //List for sleeping threads has been initialized
 
-  while(e != list_end(&sleep_list)){ //Will run until the end of sleeping threads list
-    struct thread *t = list_entry(e,struct thread,elem);
+//   while(e != list_end(&sleep_list)){ //Will run until the end of sleeping threads list
+//     struct thread *t = list_entry(e,struct thread,elem);
 
-    if(t->wakeup_tick <= current){
-      e = list_remove(e); //Take front thread from sleep list
-      thread_unblock(t); //Move thread to ready list
-    }
-    else{
-      e = list_next(e); //After thread ticks hits current ticks, move to next thread
-    }
-  }
+//     if(t->wakeup_tick <= current){
+//       e = list_remove(e); //Take front thread from sleep list
+//       thread_unblock(t); //Move thread to ready list
+//     }
+//     else{
+//       e = list_next(e); //After thread ticks hits current ticks, move to next thread
+//     }
+//   }
 
-}
+// }
 
 /** Prints thread statistics. */
 void

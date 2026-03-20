@@ -26,4 +26,6 @@ void timer_ndelay (int64_t nanoseconds);
 
 void timer_print_stats (void);
 
+void thread_check_wakeup(void);
+
 #endif /**< devices/timer.h */
