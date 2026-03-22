@@ -535,16 +535,29 @@ init_thread (struct thread *t, const char *name, int priority)
 void donate_priority(struct thread *t) {
     struct thread *curr = t;
 
-    while(curr->waiting_lock != NULL){
+    while (curr->waiting_lock != NULL) {
         struct thread *holder = curr->waiting_lock->holder;
-        if(holder == NULL){
-          break;
-        }
+        if (holder == NULL)
+            break;
 
-        if(holder->priority < curr->priority){
+        if (holder->priority < curr->priority) {
+            // Update holder's priority
             holder->priority = curr->priority;
-        }
-        else{
+
+            // Add curr as a donor if not already in list
+            bool already_donor = false;
+            struct list_elem *e;
+            for (e = list_begin(&holder->donors); e != list_end(&holder->donors); e = list_next(e)) {
+                struct thread *donor = list_entry(e, struct thread, donor_elem);
+                if (donor == curr) {
+                    already_donor = true;
+                    break;
+                }
+            }
+            if (!already_donor)
+                list_push_back(&holder->donors, &curr->donor_elem);
+        } else {
+            // No further donation needed
             break;
         }
 
@@ -567,15 +580,15 @@ void refresh_priority(void) {
     cur->priority = max_priority;
 }
 
-void remove_donations_for_lock(struct lock *lock){
+void remove_donations_for_lock(struct lock *lock) {
     struct thread *cur = thread_current();
     struct list_elem *e = list_begin(&cur->donors);
 
-    while (e != list_end(&cur->donors)){
+    while (e != list_end(&cur->donors)) {
         struct thread *donor = list_entry(e, struct thread, donor_elem);
         struct list_elem *next = list_next(e);
 
-        if(donor->waiting_lock == lock){
+        if (donor->waiting_lock == lock) {
             list_remove(e);
         }
 
