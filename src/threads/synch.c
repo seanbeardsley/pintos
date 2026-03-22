@@ -50,6 +50,10 @@ sema_init (struct semaphore *sema, unsigned value)
   list_init (&sema->waiters);
 }
 
+static bool cond_priority_more(const struct list_elem *a,
+                               const struct list_elem *b,
+                               void *aux UNUSED);
+
 /** Down or "P" operation on a semaphore.  Waits for SEMA's value
    to become positive and then atomically decrements it.
 
@@ -328,10 +332,10 @@ static bool cond_priority_more(const struct list_elem *a, const struct list_elem
   const struct semaphore_elem *sa = list_entry(a, struct semaphore_elem, elem);
   const struct semaphore_elem *sb = list_entry(b, struct semaphore_elem, elem);
 
-  const struct thread *ta = list_entry(list_front(&sa->semaphore.waiters),
-                                         struct thread, elem);
-  const struct thread *tb = list_entry(list_front(&sb->semaphore.waiters),
-                                         struct thread, elem);
+  const struct thread *ta = list_entry(list_front((struct list *)&sa->semaphore.waiters),
+                                       struct thread, elem);
+  const struct thread *tb = list_entry(list_front((struct list *)&sb->semaphore.waiters),
+                                       struct thread, elem);
 
   return ta->priority > tb->priority;
 }
