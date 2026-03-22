@@ -533,10 +533,9 @@ init_thread (struct thread *t, const char *name, int priority)
 }
 
 void donate_priority(struct thread *t) {
-    int depth = 0;
     struct thread *curr = t;
 
-    while(curr->waiting_lock != NULL && depth < 8){
+    while(curr->waiting_lock != NULL){
         struct thread *holder = curr->waiting_lock->holder;
         if(holder == NULL){
           break;
@@ -550,7 +549,6 @@ void donate_priority(struct thread *t) {
         }
 
         curr = holder;
-        depth++;
     }
 }
 
@@ -558,13 +556,11 @@ void refresh_priority(void) {
     struct thread *cur = thread_current();
     int max_priority = cur->original_priority;
 
-    if(!list_empty(&cur->donors)){
-        struct list_elem *e;
-        for(e = list_begin(&cur->donors); e != list_end(&cur->donors); e = list_next(e)){
-            struct thread *donor = list_entry(e, struct thread, donor_elem);
-            if(donor->priority > max_priority){
-                max_priority = donor->priority;
-            }
+    struct list_elem *e;
+    for (e = list_begin(&cur->donors); e != list_end(&cur->donors); e = list_next(e)) {
+        struct thread *donor = list_entry(e, struct thread, donor_elem);
+        if (donor->priority > max_priority) {
+            max_priority = donor->priority;
         }
     }
 
@@ -572,17 +568,18 @@ void refresh_priority(void) {
 }
 
 void remove_donations_for_lock(struct lock *lock){
-  struct thread *cur = thread_current();
-  struct list_elem *e = list_begin(&cur->donors);
+    struct thread *cur = thread_current();
+    struct list_elem *e = list_begin(&cur->donors);
 
-  while(e != list_end(&cur->donors)){
+    while (e != list_end(&cur->donors)){
         struct thread *donor = list_entry(e, struct thread, donor_elem);
-        if (donor->waiting_lock == lock){
-            e = list_remove(e);
+        struct list_elem *next = list_next(e);
+
+        if(donor->waiting_lock == lock){
+            list_remove(e);
         }
-        else{
-            e = list_next(e);
-        }
+
+        e = next;
     }
 
     refresh_priority();
