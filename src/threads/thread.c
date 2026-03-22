@@ -199,46 +199,41 @@ thread_print_stats (void)
    The code provided sets the new thread's `priority' member to
    PRIORITY, but no actual priority scheduling is implemented.
    Priority scheduling is the goal of Problem 1-3. */
-tid_t
-thread_create (const char *name, int priority,
-               thread_func *function, void *aux) 
-{
-  struct thread *t;
-  struct kernel_thread_frame *kf;
-  struct switch_entry_frame *ef;
-  struct switch_threads_frame *sf;
-  tid_t tid;
+tid_t thread_create(const char *name, int priority,
+                    thread_func *function, void *aux) {
+    struct thread *t;
+    struct kernel_thread_frame *kf;
+    struct switch_entry_frame *ef;
+    struct switch_threads_frame *sf;
+    tid_t tid;
 
-  ASSERT (function != NULL);
+    ASSERT(function != NULL);
 
-  /* Allocate thread. */
-  t = palloc_get_page (PAL_ZERO);
-  if (t == NULL)
-    return TID_ERROR;
+    t = palloc_get_page(PAL_ZERO);
+    if (t == NULL)
+        return TID_ERROR;
 
-  /* Initialize thread. */
-  init_thread (t, name, priority);
-  tid = t->tid = allocate_tid ();
+    init_thread(t, name, priority);
+    tid = t->tid = allocate_tid();
 
-  /* Stack frame for kernel_thread(). */
-  kf = alloc_frame (t, sizeof *kf);
-  kf->eip = NULL;
-  kf->function = function;
-  kf->aux = aux;
+    kf = alloc_frame(t, sizeof *kf);
+    kf->eip = NULL;
+    kf->function = function;
+    kf->aux = aux;
 
-  /* Stack frame for switch_entry(). */
-  ef = alloc_frame (t, sizeof *ef);
-  ef->eip = (void (*) (void)) kernel_thread;
+    ef = alloc_frame(t, sizeof *ef);
+    ef->eip = (void (*)(void)) kernel_thread;
 
-  /* Stack frame for switch_threads(). */
-  sf = alloc_frame (t, sizeof *sf);
-  sf->eip = switch_entry;
-  sf->ebp = 0;
+    sf = alloc_frame(t, sizeof *sf);
+    sf->eip = switch_entry;
+    sf->ebp = 0;
 
-  /* Add to run queue. */
-  thread_unblock (t);
+    thread_unblock(t);
 
-  return tid;
+    if (t->priority > thread_current()->priority)
+        thread_yield();
+
+    return tid;
 }
 
 /** Puts the current thread to sleep.  It will not be scheduled
@@ -274,17 +269,7 @@ void thread_unblock(struct thread *t) {
     list_insert_ordered(&ready_list, &t->elem, thread_priority_more, NULL);
     t->status = THREAD_READY;
 
-    bool should_yield = (t->priority > thread_current()->priority 
-                         && thread_current() != idle_thread);
-
-    intr_set_level(old_level);      // restore BEFORE yielding
-
-    if (should_yield) {
-        if (intr_context())
-            intr_yield_on_return();
-        else
-            thread_yield();
-    }
+    intr_set_level(old_level);
 }
 
 /** Returns the name of the running thread. */

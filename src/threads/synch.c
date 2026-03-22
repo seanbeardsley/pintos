@@ -115,11 +115,8 @@ void sema_up(struct semaphore *sema) {
                                   struct thread, elem));
     }
     sema->value++;
-    intr_set_level(old_level);
 
-    // Now safe to yield — interrupts are back on
-    if (!intr_context() && thread_current()->priority < highest_ready_priority())
-        thread_yield();
+    intr_set_level(old_level);
 }
 
 static void sema_test_helper (void *sema_);
@@ -247,11 +244,14 @@ void lock_release(struct lock *lock) {
 
     enum intr_level old_level = intr_disable();
 
-    remove_donations_for_lock(lock);  // uses waiting_lock which is still set
+    remove_donations_for_lock(lock);
     lock->holder = NULL;
+    sema_up(&lock->semaphore);
 
     intr_set_level(old_level);
-    sema_up(&lock->semaphore);        // unblocks waiter, who will set holder
+
+    if (thread_current()->priority < highest_ready_priority())
+        thread_yield();
 }
 
 /** Returns true if the current thread holds LOCK, false
@@ -339,6 +339,7 @@ static bool cond_priority_more(const struct list_elem *a,
 
 void cond_signal(struct condition *cond, struct lock *lock UNUSED) {
     if (!list_empty(&cond->waiters)) {
+        list_sort(&cond->waiters, cond_priority_more, NULL);
         struct semaphore_elem *se = list_entry(list_pop_front(&cond->waiters),
                                                struct semaphore_elem, elem);
         sema_up(&se->semaphore);
