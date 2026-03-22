@@ -214,6 +214,13 @@ lock_acquire (struct lock *lock)
   ASSERT (!intr_context ());
   ASSERT (!lock_held_by_current_thread (lock));
 
+  struct thread *cur = thread_current();
+
+  if(lock->holder != NULL){
+      cur->waiting_lock = lock;
+      donate_priority(cur);
+  }
+
   sema_down (&lock->semaphore);
   lock->holder = thread_current ();
 }
@@ -328,7 +335,10 @@ cond_wait (struct condition *cond, struct lock *lock)
    make sense to try to signal a condition variable within an
    interrupt handler. */
 
-static bool cond_priority_more(const struct list_elem *a, const struct list_elem *b, void *aux UNUSED){
+static bool cond_priority_more(const struct list_elem *a,
+                               const struct list_elem *b,
+                               void *aux UNUSED) 
+{
   const struct semaphore_elem *sa = list_entry(a, struct semaphore_elem, elem);
   const struct semaphore_elem *sb = list_entry(b, struct semaphore_elem, elem);
 
