@@ -93,6 +93,14 @@ bool thread_priority_more(const struct list_elem *a, const struct list_elem *b, 
   return t1->priority > t2->priority;
 }
 
+int highest_ready_priority(void){
+  if(list_empty(&ready_list)){
+    return PRI_MIN;
+  }
+  struct thread *t = list_entry(list_front(&ready_list), struct thread, elem);
+  return t->priority;
+}
+
 void
 thread_init (void) 
 {
