@@ -256,8 +256,16 @@ lock_release (struct lock *lock)
   ASSERT (lock != NULL);
   ASSERT (lock_held_by_current_thread (lock));
 
+  struct thread *cur = thread_current();
+
+  remove_donations_for_lock(lock);
+
+
   lock->holder = NULL;
   sema_up (&lock->semaphore);
+
+  refresh_priority();
+  
 }
 
 /** Returns true if the current thread holds LOCK, false
