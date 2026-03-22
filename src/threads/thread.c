@@ -532,6 +532,28 @@ init_thread (struct thread *t, const char *name, int priority)
   intr_set_level (old_level);
 }
 
+void donate_priority(struct thread *t) {
+    int depth = 0;
+    struct thread *curr = t;
+
+    while(curr->waiting_lock != NULL && depth < 8){
+        struct thread *holder = curr->waiting_lock->holder;
+        if(holder == NULL){
+          break;
+        }
+
+        if(holder->priority < curr->priority){
+            holder->priority = curr->priority;
+        }
+        else{
+            break;
+        }
+
+        curr = holder;
+        depth++;
+    }
+}
+
 /** Allocates a SIZE-byte frame at the top of thread T's stack and
    returns a pointer to the frame's base. */
 static void *
