@@ -554,15 +554,33 @@ void donate_priority(struct thread *t) {
     }
 }
 
+void refresh_priority(void) {
+    struct thread *cur = thread_current();
+    int max_priority = cur->original_priority;
+
+    if(!list_empty(&cur->donors)){
+        struct list_elem *e;
+        for(e = list_begin(&cur->donors); e != list_end(&cur->donors); e = list_next(e)){
+            struct thread *donor = list_entry(e, struct thread, donor_elem);
+            if(donor->priority > max_priority){
+                max_priority = donor->priority;
+            }
+        }
+    }
+
+    cur->priority = max_priority;
+}
+
 void remove_donations_for_lock(struct lock *lock){
   struct thread *cur = thread_current();
   struct list_elem *e = list_begin(&cur->donors);
 
-  while (e != list_end(&cur->donors)) {
+  while(e != list_end(&cur->donors)){
         struct thread *donor = list_entry(e, struct thread, donor_elem);
-        if (donor->waiting_lock == lock) {
+        if (donor->waiting_lock == lock){
             e = list_remove(e);
-        } else {
+        }
+        else{
             e = list_next(e);
         }
     }
