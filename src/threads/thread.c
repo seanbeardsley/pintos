@@ -554,6 +554,22 @@ void donate_priority(struct thread *t) {
     }
 }
 
+void remove_donations_for_lock(struct lock *lock){
+  struct thread *cur = thread_current();
+  struct list_elem *e = list_begin(&cur->donors);
+
+  while (e != list_end(&cur->donors)) {
+        struct thread *donor = list_entry(e, struct thread, donor_elem);
+        if (donor->waiting_lock == lock) {
+            e = list_remove(e);
+        } else {
+            e = list_next(e);
+        }
+    }
+
+    refresh_priority();
+}
+
 /** Allocates a SIZE-byte frame at the top of thread T's stack and
    returns a pointer to the frame's base. */
 static void *
