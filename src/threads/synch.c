@@ -117,6 +117,9 @@ void sema_up(struct semaphore *sema) {
     sema->value++;
 
     intr_set_level(old_level);
+
+    if (!intr_context() && thread_current()->priority < highest_ready_priority())
+        thread_yield();
 }
 
 static void sema_test_helper (void *sema_);
@@ -249,9 +252,6 @@ void lock_release(struct lock *lock) {
     sema_up(&lock->semaphore);
 
     intr_set_level(old_level);
-
-    if (thread_current()->priority < highest_ready_priority())
-        thread_yield();
 }
 
 /** Returns true if the current thread holds LOCK, false
@@ -270,6 +270,7 @@ struct semaphore_elem
   {
     struct list_elem elem;              /**< List element. */
     struct semaphore semaphore;         /**< This semaphore. */
+    int priority;
   };
 
 /** Initializes condition variable COND.  A condition variable
@@ -306,6 +307,7 @@ cond_init (struct condition *cond)
 void cond_wait(struct condition *cond, struct lock *lock) {
     struct semaphore_elem waiter;
     sema_init(&waiter.semaphore, 0);
+    waiter.priority = thread_current()->priority;  // <-- store it here
 
     list_insert_ordered(&cond->waiters, &waiter.elem, cond_priority_more, NULL);
 
@@ -326,15 +328,9 @@ static bool cond_priority_more(const struct list_elem *a,
                                const struct list_elem *b,
                                void *aux UNUSED) 
 {
-    struct semaphore_elem *sa = list_entry(a, struct semaphore_elem, elem);
-    struct semaphore_elem *sb = list_entry(b, struct semaphore_elem, elem);
-
-    struct thread *ta = list_entry(list_front(&sa->semaphore.waiters),
-                                   struct thread, elem);
-    struct thread *tb = list_entry(list_front(&sb->semaphore.waiters),
-                                   struct thread, elem);
-
-    return ta->priority > tb->priority;
+    const struct semaphore_elem *sa = list_entry(a, struct semaphore_elem, elem);
+    const struct semaphore_elem *sb = list_entry(b, struct semaphore_elem, elem);
+    return sa->priority > sb->priority;
 }
 
 void cond_signal(struct condition *cond, struct lock *lock UNUSED) {
