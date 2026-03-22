@@ -144,6 +144,10 @@ void thread_set_nice (int);
 int thread_get_recent_cpu (void);
 int thread_get_load_avg (void);
 
+void donate_priority(struct thread *t);
+void remove_donations_for_lock(struct lock *lock);
+void refresh_priority(void);
+
 void thread_check_wakeup(void);
 
 int64_t wakeup_tick (void);
